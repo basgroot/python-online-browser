@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python + pygame, in your browser</title>
+<meta name="description" content="Write and run Python with pygame directly in the browser. Nothing to install, nothing uploaded to a server.">
+<link rel="stylesheet" href="/src/styles.css">
+</head>
+<body class="booting">
+
+<header id="toolbar">
+  <h1>Python <span>+ pygame</span></h1>
+
+  <label class="field">
+    <span class="sr-only">Example</span>
+    <select id="examples" aria-label="Load an example"></select>
+  </label>
+
+  <button id="run" class="primary" disabled>Run <kbd>Ctrl</kbd>+<kbd>&crarr;</kbd></button>
+  <button id="stop" disabled>Stop</button>
+  <button id="share">Copy share link</button>
+
+  <span id="status" role="status" aria-live="polite">Starting Python&hellip;</span>
+</header>
+
+<main>
+  <section class="pane" id="editor-pane">
+    <div class="pane-head" id="tabs-head">
+      <div id="tabs" role="tablist" aria-label="Project files"></div>
+      <button id="add-file" class="link" title="Add a new .py file">+ file</button>
+    </div>
+    <div id="editor"></div>
+  </section>
+
+  <section class="pane" id="output-pane">
+    <div class="pane-head">
+      Output
+      <button id="clear-console" class="link">clear</button>
+    </div>
+    <div id="stage">
+      <!-- SDL requires this element's id to be exactly "canvas". -->
+      <canvas id="canvas" width="480" height="360" tabindex="0"
+              aria-label="Program display"></canvas>
+    </div>
+    <div id="console" aria-live="polite"></div>
+  </section>
+</main>
+
+<div id="boot-overlay">
+  <div class="boot-box">
+    <div class="spinner" aria-hidden="true"></div>
+    <p id="boot-text">Downloading Python&hellip;</p>
+    <p class="boot-note">First visit downloads about 8&nbsp;MB. It is cached afterwards.</p>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

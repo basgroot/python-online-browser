@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phase 0 spike — Pyodide + pygame-ce</title>
+<style>
+  body { font: 13px/1.5 ui-monospace, monospace; margin: 0; padding: 12px; background: #111; color: #ddd; }
+  #canvas { border: 1px solid #444; display: block; background: #000; }
+  #log { white-space: pre-wrap; max-height: 40vh; overflow: auto; margin-top: 8px; }
+</style>
+</head>
+<body>
+<!-- SDL/Emscripten REQUIRES this element to have id="canvas".
+     tabindex makes it focusable so it can receive real key events. -->
+<canvas id="canvas" width="320" height="240" tabindex="0"></canvas>
+<div id="log"></div>
+
+<script type="module">
+const logEl = document.getElementById('log');
+const log = (...a) => {
+  const s = a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ');
+  logEl.textContent += s + '\n';
+  console.log(...a);
+};
+
+// Diagnostic: record which canvas context type SDL actually requests.
+// Determines whether the backing store is 2D or WebGL, which dictates
+// how we can read pixels back.
+const contextRequests = [];
+const origGetContext = HTMLCanvasElement.prototype.getContext;
+HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
+  if (this.id === 'canvas') contextRequests.push(type);
+  return origGetContext.call(this, type, ...rest);
+};
+
+const spike = {
+  pyodide: null,
+  ready: false,
+  bootError: null,
+  contextRequests,
+  stdout: [],
+  stderr: [],
+};
+window.spike = spike;
+
+spike.boot = async function boot() {
+  const t0 = performance.now();
+  const { loadPyodide } = await import('/vendor/pyodide/pyodide.mjs');
+
+  const pyodide = await loadPyodide({
+    indexURL: '/vendor/pyodide/',
+    stdout: (s) => spike.stdout.push(s),
+    stderr: (s) => spike.stderr.push(s),
+  });
+  spike.pyodide = pyodide;
+  const tLoad = performance.now();
+
+  // Mandatory opt-in. Without this, SDL init trips Pyodide's unwind guard
+  // and reports "Pyodide has suffered a fatal error". The runtime reads it as:
+  //   maybe_fatal_error = t => _skip_unwind_fatal_error && t === "unwind" || fatal_error(t)
+  // It is never pre-initialised, so it reads as undefined until we set it.
+  if (pyodide._api) pyodide._api._skip_unwind_fatal_error = true;
+  const skipUnwindSet = pyodide._api?._skip_unwind_fatal_error === true;
+
+  // Bind the canvas before importing pygame.
+  const canvas = document.getElementById('canvas');
+  const hasCanvasApi = !!(pyodide.canvas && pyodide.canvas.setCanvas2D);
+  if (hasCanvasApi) pyodide.canvas.setCanvas2D(canvas);
+  else if (pyodide._module) pyodide._module.canvas = canvas;
+
+  await pyodide.loadPackage('pygame-ce');
+  const tPkg = performance.now();
+
+  spike.ready = true;
+  return {
+    skipUnwindSet,
+    hasCanvasApi,
+    loadMs: Math.round(tLoad - t0),
+    packageMs: Math.round(tPkg - tLoad),
+    totalMs: Math.round(tPkg - t0),
+    pythonVersion: pyodide.runPython('import sys; sys.version'),
+  };
+};
+
+// Run python, returning a JS-native result. Converts dict -> plain object.
+spike.run = async function run(code) {
+  const res = await spike.pyodide.runPythonAsync(code);
+  if (res && typeof res.toJs === 'function') {
+    const js = res.toJs({ dict_converter: Object.fromEntries });
+    res.destroy();
+    return js;
+  }
+  return res;
+};
+
+// Fire-and-forget: start a long-running async python task without awaiting it,
+// so the test can drive input events while it runs.
+spike.start = function start(code) {
+  spike.pyodide.runPythonAsync(code).catch(e => {
+    spike.bootError = String(e);
+    log('start() task error:', String(e));
+  });
+};
+
+spike.getGlobal = function getGlobal(name) {
+  const v = spike.pyodide.globals.get(name);
+  if (v && typeof v.toJs === 'function') {
+    const js = v.toJs({ dict_converter: Object.fromEntries });
+    v.destroy();
+    return js;
+  }
+  return v;
+};
+
+// Read pixels from the *composited* canvas, independent of whether the
+// backing context is 2D or WebGL. Proves rendering actually reached the DOM,
+// not merely pygame's internal surface.
+spike.sampleCanvas = function sampleCanvas(points) {
+  const src = document.getElementById('canvas');
+  const off = document.createElement('canvas');
+  off.width = src.width;
+  off.height = src.height;
+  const ctx = off.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(src, 0, 0);
+  return points.map(([x, y]) => {
+    const d = ctx.getImageData(x, y, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  });
+};
+
+// Count pixels differing from a reference colour, over a region.
+spike.countNonBackground = function countNonBackground(x, y, w, h, bg) {
+  const src = document.getElementById('canvas');
+  const off = document.createElement('canvas');
+  off.width = src.width;
+  off.height = src.height;
+  const ctx = off.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(src, 0, 0);
+  const d = ctx.getImageData(x, y, w, h).data;
+  let n = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i] !== bg[0] || d[i + 1] !== bg[1] || d[i + 2] !== bg[2]) n++;
+  }
+  return n;
+};
+
+log('spike harness loaded');
+</script>
+</body>
+</html>

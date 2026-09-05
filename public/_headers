@@ -1,0 +1,24 @@
+# Cloudflare Pages / Netlify header rules.
+
+# The pinned Pyodide runtime never changes for a given version, so cache it
+# hard. This is what makes the ~8MB first load a one-time cost.
+/vendor/pyodide/*
+  Cache-Control: public, max-age=31536000, immutable
+  Cross-Origin-Resource-Policy: cross-origin
+
+# Vite emits content-hashed filenames, so these are immutable too.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Student code lives in the URL fragment and never reaches a server, so
+  # there is nothing to leak here.
+
+  # NOT enabled yet. Turning these on unlocks SharedArrayBuffer, which is the
+  # only way to interrupt a genuinely blocking loop that escaped the
+  # transformer (see the Stop-button limitation). Enable together with that
+  # feature, not before - it constrains what can be embedded.
+  # Cross-Origin-Opener-Policy: same-origin
+  # Cross-Origin-Embedder-Policy: require-corp

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>End-to-end harness — transformer + runtime</title>
+<style>
+  body { font: 13px/1.5 ui-monospace, monospace; margin: 0; padding: 12px; background: #111; color: #ddd; }
+  #canvas { border: 1px solid #444; display: block; background: #000; }
+  #log { white-space: pre-wrap; max-height: 40vh; overflow: auto; margin-top: 8px; }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="320" height="240" tabindex="0"></canvas>
+<div id="log"></div>
+
+<script type="module">
+import { PythonRuntime } from '/src/runtime/index.js';
+
+const logEl = document.getElementById('log');
+const write = (s) => { logEl.textContent += s + '\n'; };
+
+const app = {
+  runtime: null,
+  stdout: [],
+  stderr: [],
+  status: [],
+  result: null,
+  running: false,
+};
+window.app = app;
+
+app.boot = async function boot() {
+  app.runtime = new PythonRuntime({
+    canvas: document.getElementById('canvas'),
+    indexURL: '/vendor/pyodide/',
+    pyplayURL: '/python/pyplay',
+    onStdout: (s) => { app.stdout.push(s); write('out: ' + s); },
+    onStderr: (s) => { app.stderr.push(s); write('err: ' + s); },
+    onStatus: (stage, detail) => {
+      app.status.push(stage);
+      write(`[${stage}]` + (detail ? ' ' + JSON.stringify(detail) : ''));
+    },
+  });
+  return await app.runtime.boot();
+};
+
+/** Fire-and-forget so the test can interact while the program runs. */
+app.start = function start(code) {
+  app.result = null;
+  app.running = true;
+  app.runtime.run(code).then((r) => {
+    app.result = r;
+    app.running = false;
+    write('result: ' + JSON.stringify(r));
+  });
+};
+
+app.runToCompletion = (code) => app.runtime.run(code);
+app.prepare = (code) => app.runtime.prepare(code);
+app.stop = () => app.runtime.stop();
+app.isRunning = () => app.runtime.isRunning();
+
+// Pixel readback, independent of whether SDL chose a 2D or WebGL context.
+app.sample = function sample(points) {
+  const src = document.getElementById('canvas');
+  const off = document.createElement('canvas');
+  off.width = src.width;
+  off.height = src.height;
+  const ctx = off.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(src, 0, 0);
+  return points.map(([x, y]) => {
+    const d = ctx.getImageData(x, y, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  });
+};
+
+/** Find the first x on row `y` matching `colour`. Observes rendered output
+    rather than interpreter state, since user globals are deliberately
+    isolated from pyodide.globals. */
+app.scanRow = function scanRow(y, colour) {
+  const src = document.getElementById('canvas');
+  const off = document.createElement('canvas');
+  off.width = src.width;
+  off.height = src.height;
+  const ctx = off.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(src, 0, 0);
+  const d = ctx.getImageData(0, y, src.width, 1).data;
+  for (let x = 0; x < src.width; x++) {
+    const i = x * 4;
+    if (d[i] === colour[0] && d[i + 1] === colour[1] && d[i + 2] === colour[2]) return x;
+  }
+  return -1;
+};
+
+write('e2e harness loaded');
+</script>
+</body>
+</html>

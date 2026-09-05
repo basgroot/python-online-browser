@@ -1,0 +1,7 @@
+{
+  "extraPaths": ["python"],
+  "include": ["python", "tests", "examples"],
+  "exclude": ["public", "node_modules", "test-results", "dist", ".pytest_cache"],
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none"
+}

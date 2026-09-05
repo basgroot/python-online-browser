@@ -1,0 +1,267 @@
+:root {
+  --bg: #14161a;
+  --panel: #1b1e24;
+  --panel-2: #22262e;
+  --line: #2e333d;
+  --text: #dfe3ea;
+  --muted: #8d95a3;
+  --accent: #4cc38a;
+  --accent-ink: #06231a;
+  --danger: #ff6b6b;
+  --warn: #ffc861;
+  --radius: 8px;
+  --head: 48px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+#toolbar {
+  height: var(--head);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+#toolbar h1 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 0 8px 0 0;
+  white-space: nowrap;
+}
+#toolbar h1 span { color: var(--accent); font-weight: 500; }
+
+button, select {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:hover:not(:disabled), select:hover { border-color: #454c58; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 0 4px;
+  font-size: 12px;
+}
+button.link:hover { color: var(--text); }
+
+kbd {
+  font: 11px ui-monospace, monospace;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+#status {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#status.error { color: var(--danger); }
+#status.ok { color: var(--accent); }
+
+/* ------------------------------------------------------------------ panes */
+
+main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  height: calc(100vh - var(--head));
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------------- file tabs */
+
+#tabs-head { gap: 8px; padding: 0 8px 0 6px; }
+
+#tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px 7px 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tab:hover { color: var(--text); border-color: var(--line); }
+.tab[aria-selected='true'] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  background: var(--panel-2);
+}
+.tab .entry-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.tab .close {
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.5;
+  padding: 0 2px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.tab .close:hover { opacity: 1; background: rgba(255, 255, 255, 0.1); }
+
+#add-file { white-space: nowrap; }
+
+#editor { flex: 1; min-height: 0; overflow: hidden; }
+#editor .cm-editor { height: 100%; }
+#editor .cm-scroller { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+#stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #0e1013;
+  border-bottom: 1px solid var(--line);
+}
+
+#canvas {
+  background: #000;
+  border-radius: 4px;
+  max-width: 100%;
+  /* Keep pixel art crisp when the canvas is scaled down to fit. */
+  image-rendering: pixelated;
+  outline: none;
+}
+#canvas:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+
+#console {
+  flex: 1;
+  min-height: 120px;
+  overflow: auto;
+  padding: 8px 12px;
+  font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#console .err { color: var(--danger); }
+#console .warn { color: var(--warn); }
+#console .note { color: var(--muted); }
+
+/* --------------------------------------------------------------- overlay */
+
+#boot-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 12, 15, 0.9);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+}
+body:not(.booting) #boot-overlay { display: none; }
+
+.boot-box { text-align: center; }
+.boot-box p { margin: 6px 0 0; }
+.boot-note { color: var(--muted); font-size: 12px; }
+
+.spinner {
+  width: 26px; height: 26px;
+  margin: 0 auto;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 3s; }
+}
+
+/* ------------------------------------------------------------ embed mode */
+
+body.embed #toolbar,
+body.embed #editor-pane,
+body.embed .pane-head { display: none; }
+
+body.embed main { grid-template-columns: 1fr; height: 100vh; }
+body.embed #console { max-height: 30vh; }
+
+/* --------------------------------------------------------------- responsive */
+
+@media (max-width: 820px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; height: auto; min-height: calc(100vh - var(--head)); }
+  #toolbar { flex-wrap: wrap; height: auto; padding: 8px 12px; }
+  #status { width: 100%; margin-left: 0; }
+}
