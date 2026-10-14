@@ -21,8 +21,8 @@
   "devDependencies": {
     "@codemirror/lang-python": "^6.2.1",
     "@codemirror/theme-one-dark": "^6.1.3",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "codemirror": "^6.0.2",
-    "vite": "^8.3.3"
+    "vite": "^8.3.4"
   }
 }
