@@ -31,16 +31,3 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-      time: "07:00"
-      timezone: "Europe/Amsterdam"
-    cooldown:
-      default-days: 2
-    commit-message:
-      prefix: "chore"
-      include: "scope"
